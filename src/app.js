@@ -17,9 +17,12 @@ const path = require('path');
 
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:4200',
+  origin: [
+    'http://localhost:4200',
+    'https://fornicas-web.pages.dev'
+  ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization' ,'x-visitor-token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-visitor-token'],
 }));
 app.use('/api/health', healthRoutes);
 app.use('/api/profiles', profileRoutes);
