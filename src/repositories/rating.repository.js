@@ -40,7 +40,8 @@ class RatingRepository {
                 ]
             ],
             where: {
-                profile_id: profileId
+                profile_id: profileId,
+                status: 'APPROVED'
             },
             raw: true
         });
@@ -53,7 +54,8 @@ class RatingRepository {
     async countByProfile(profileId) {
         return await this.Rating.count({
             where: {
-                profile_id: profileId
+                profile_id: profileId,
+                status: 'APPROVED'
             }
         });
     }

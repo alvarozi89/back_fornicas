@@ -16,6 +16,16 @@ class LocationRepository {
         });
     }
 
+        
+    async findAllCities() {
+        return await this.City.findAll({
+            attributes: ['id', 'code', 'name', 'department_id'],
+            order: [
+                ['name', 'ASC']
+            ]
+        });
+}
+
     async findCitiesByDepartmentId(departmentId) {
 
         return await this.City.findAll({

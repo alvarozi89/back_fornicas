@@ -91,18 +91,29 @@ async getAllActive(page = 1, limit = 12, filters = {}) {
         filters
     );
 
-    const total = result.count;
-    const totalPages = Math.ceil(total / limit);
+   const total = result.count;
+const totalPages = Math.ceil(total / limit);
 
-    return {
-        profiles: result.rows,
-        pagination: {
-            page,
-            limit,
-            total,
-            totalPages
-        }
-    };
+const profiles = await Promise.all(
+    result.rows.map(async (profile) => {
+        const rating = await this.ratingService.getProfileRating(profile.id);
+
+        return {
+            ...profile.toJSON(),
+            rating
+        };
+    })
+);
+
+return {
+    profiles,
+    pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+    }
+};
 }
 
     async getMyProfile(userId) {

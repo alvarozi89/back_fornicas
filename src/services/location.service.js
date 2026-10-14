@@ -6,6 +6,10 @@ class LocationService {
         this.locationRepository = new LocationRepository();
     }
 
+    async getAllCities() {
+    return await this.locationRepository.findAllCities();
+}
+
     async getDepartments() {
 
         return await this.locationRepository.findAllDepartments();

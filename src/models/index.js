@@ -17,6 +17,7 @@ const Comment = require('./comment')(sequelize, DataTypes);
 const Report = require('./report')(sequelize, DataTypes);
 const Department = require('./department')(sequelize, DataTypes);
 const City = require('./city')(sequelize, DataTypes);
+const Notification = require('./notification')(sequelize, DataTypes);
 
 db.User = User;
 db.Profile = Profile;
@@ -30,6 +31,7 @@ db.Comment = Comment;
 db.Report = Report;
 db.Department = Department;
 db.City = City;
+db.Notification = Notification;
 
 
 Object.keys(db).forEach((modelName) => {

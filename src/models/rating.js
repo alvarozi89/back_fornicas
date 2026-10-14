@@ -34,7 +34,17 @@ module.exports = (sequelize, DataTypes) => {
             rating: {
                 type: DataTypes.TINYINT,
                 allowNull: false
-            }
+            },
+            
+        status: {
+            type: DataTypes.ENUM(
+                'PENDING',
+                'APPROVED',
+                'REJECTED'
+            ),
+            allowNull: false,
+            defaultValue: 'PENDING'
+        }
         },
         {
             sequelize,

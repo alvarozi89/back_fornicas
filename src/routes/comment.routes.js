@@ -31,4 +31,17 @@ router.delete(
     commentController.delete
 );
 
+
+router.put(
+    '/:id/moderation',
+    authMiddleware,
+    commentController.moderateReview
+);
+
+router.get(
+    '/:profileId/pending',
+    authMiddleware,
+    commentController.getPendingByProfile
+);
+
 module.exports = router;

@@ -60,6 +60,24 @@ class LocationController {
             });
         }
     };
+    
+getAllCities = async (req, res) => {
+    try {
+        const cities = await this.locationService.getAllCities();
+
+        return res.status(200).json({
+            success: true,
+            data: cities
+        });
+    } catch (error) {
+        console.error('Error al obtener todas las ciudades:', error);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
 }
 
 module.exports = LocationController;

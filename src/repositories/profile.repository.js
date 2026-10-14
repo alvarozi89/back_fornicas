@@ -11,22 +11,27 @@ class ProfileRepository {
         this.Department = models.Department;
     }
 
-    async findById(id) {
-        return await this.Profile.findByPk(id, {
-            include: [
-                {
-                    model: this.Photo,
-                    as: 'photos'
-                },
-                {
-                    model: this.Video,
-                    as: 'videos'
-                }
-            ]
-        });
-    }
+  async findById(id) {
+    return await this.Profile.findByPk(id, {
+        include: [
+            {
+                model: this.User,
+                as: 'user',
+                attributes: ['id', 'email']
+            },
+            {
+                model: this.Photo,
+                as: 'photos'
+            },
+            {
+                model: this.Video,
+                as: 'videos'
+            }
+        ]
+    });
+}
 
-    async findPublicById(id) {
+async findPublicById(id) {
 
     return await this.Profile.findOne({
 
@@ -35,28 +40,63 @@ class ProfileRepository {
             status: 'ACTIVE'
         },
 
+        attributes: [
+            'id',
+            'user_id',
+            'name',
+            'title',
+            'nickname',
+            'birth_date',
+            'description',
+            'city_id',
+            'whatsapp',
+            'telegram'
+        ],
+
         include: [
 
             {
-                model: this.Photo,
-                as: 'photos'
-            },
+        model: this.Photo,
+        as: 'photos',
+        attributes: [
+            'id',
+            'url',
+            'is_main',
+            'sort_order'
+        ]
+    },
 
-            {
-                model: this.Video,
-                as: 'videos'
-            },
+           {
+        model: this.Video,
+        as: 'videos',
+        attributes: [
+            'id',
+            'url',
+            'thumbnail_url',
+            'sort_order'
+        ]
+    },
 
-            {
-                model: this.City,
-                as: 'cityData',
-                include: [
-                    {
-                        model: this.Department,
-                        as: 'department'
-                    }
-                ]
-            }
+           {
+    model: this.City,
+    as: 'cityData',
+    attributes: [
+        'id',
+        'code',
+        'name'
+    ],
+    include: [
+        {
+            model: this.Department,
+            as: 'department',
+            attributes: [
+                'id',
+                'code',
+                'name'
+            ]
+        }
+    ]
+}
         ]
     });
 }
@@ -88,7 +128,6 @@ async findAllActive(limit, offset, filters = {}) {
         as: 'cityData',
         attributes: [
             'id',
-            'department_id',
             'code',
             'name'
         ],
@@ -107,15 +146,17 @@ async findAllActive(limit, offset, filters = {}) {
     };
 
     if (filters.departmentId) {
-        cityInclude.where = {
-            department_id: filters.departmentId
-        };
 
-        cityInclude.required = true;
-    }
+    cityInclude.required = true;
 
+    cityInclude.include[0].where = {
+        id: filters.departmentId
+    };
+
+    cityInclude.include[0].required = true;
+}
+   
     return await this.Profile.findAndCountAll({
-
         where,
 
         attributes: [
@@ -123,7 +164,15 @@ async findAllActive(limit, offset, filters = {}) {
             'name',
             'title',
             'nickname',
-            'city_id'
+            'city_id',
+            [
+                this.Profile.sequelize.literal(`(
+                    SELECT COUNT(*)
+                    FROM profile_views AS pv
+                    WHERE pv.profile_id = Profile.id
+                )`),
+                'total_views'
+            ]
         ],
 
         include: [
@@ -140,11 +189,14 @@ async findAllActive(limit, offset, filters = {}) {
                 },
                 required: false
             },
-
             cityInclude
         ],
 
         order: [
+            [
+                this.Profile.sequelize.literal('total_views'),
+                'DESC'
+            ],
             ['id', 'DESC']
         ],
 
@@ -154,13 +206,34 @@ async findAllActive(limit, offset, filters = {}) {
     });
 }
 
-    async findByUserId(userId) {
-        return await this.Profile.findOne({
-            where: {
-                user_id: userId
-            }
-        });
-    }
+  async findByUserId(userId) {
+return await this.Profile.findOne({
+where: {
+user_id: userId
+},
+include: [
+{
+model: this.Photo,
+as: 'photos',
+attributes: [
+'id',
+'url',
+'is_main',
+'sort_order'
+],
+required: false
+}
+],
+order: [
+[
+{ model: this.Photo, as: 'photos' },
+'sort_order',
+'ASC'
+]
+]
+});
+}
+
 
 async create(data, transaction) {
     return await this.Profile.create(data, {

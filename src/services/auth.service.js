@@ -2,6 +2,7 @@ const db = require("../models");
 const UserRepository = require("../repositories/user.repository");
 const ProfileRepository = require("../repositories/profile.repository");
 const SubscriptionRepository = require("../repositories/subscription.repository");
+const EmailService = require('./email.service');
 const bcrypt = require("bcrypt");
 const { generateToken } = require('../utils/jwt');
 
@@ -10,6 +11,7 @@ class AuthService {
     this.userRepository = new UserRepository(db);
     this.profileRepository = new ProfileRepository(db);
     this.subscriptionRepository = new SubscriptionRepository(db);
+    this.emailService = new EmailService();
   }
 
   async register(data) {
@@ -55,23 +57,34 @@ class AuthService {
     if (!city) {
       throw new Error("La ciudad seleccionada no existe");
     }
-    const birthDate = new Date(birth_date);
-    const today = new Date();
+   const birthDate = new Date(`${birth_date}T00:00:00`);
 
-    let age = today.getFullYear() - birthDate.getFullYear();
+if (Number.isNaN(birthDate.getTime())) {
+    throw new Error("La fecha de nacimiento no es válida");
+}
 
-    const monthDifference = today.getMonth() - birthDate.getMonth();
+const today = new Date();
 
-    if (
+let age = today.getFullYear() - birthDate.getFullYear();
+
+const monthDifference =
+    today.getMonth() - birthDate.getMonth();
+
+if (
     monthDifference < 0 ||
-    (monthDifference === 0 && today.getDate() < birthDate.getDate())
-    ) {
+    (
+        monthDifference === 0 &&
+        today.getDate() < birthDate.getDate()
+    )
+) {
     age--;
-    }
+}
 
-    if (age < 18) {
-    throw new Error("Debes ser mayor de 18 años para registrarte");
-    }
+if (age < 18) {
+    throw new Error(
+        "Debes ser mayor de 18 años para registrarte"
+    );
+}
 
     const userExists = await this.userRepository.existsByEmail(email);
 
@@ -147,7 +160,30 @@ class AuthService {
       // CONFIRMAR
       // ==========================
 
-      await transaction.commit();
+      
+    await transaction.commit();
+
+  // Enviar correo de bienvenida
+    try {
+        await this.emailService.sendEmail(
+            user.email,
+            '¡Bienvenida a Fornicas!',
+            `Hola ${profile.name},
+
+    ¡Te damos la bienvenida a Fornicas!
+
+    Tu cuenta ha sido creada correctamente y ya tienes un mes de prueba gratuito.
+
+    Completa tu perfil y agrega tus fotos para comenzar.
+
+    Gracias por formar parte de Fornicas.`
+        );
+    } catch (error) {
+        console.error(
+            'Error enviando correo de bienvenida:',
+            error.message
+        );
+    }
 
       return {
         user: {

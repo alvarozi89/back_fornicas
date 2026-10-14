@@ -24,6 +24,19 @@ class CommentRepository {
         });
     }
 
+    
+    async findPendingByProfile(profileId) {
+        return await this.Comment.findAll({
+            where: {
+                profile_id: profileId,
+                status: 'PENDING'
+            },
+            order: [
+                ['created_at', 'DESC']
+            ]
+        });
+    }
+
     async findAllByProfile(profileId) {
         return await this.Comment.findAll({
             where: {
