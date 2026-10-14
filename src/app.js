@@ -20,7 +20,8 @@ app.use(express.json());
 app.use(cors({
   origin: [
     'http://localhost:4200',
-    'https://front-fornicas.alvarozi89.workers.dev'
+    'https://front-fornicas.alvarozi89.workers.dev',
+    'https://www.fornicas.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-visitor-token'],
