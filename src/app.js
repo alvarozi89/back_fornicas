@@ -21,7 +21,8 @@ app.use(cors({
   origin: [
     'http://localhost:4200',
     'https://front-fornicas.alvarozi89.workers.dev',
-    'https://www.fornicas.com'
+    'https://www.fornicas.com',
+    'https://fornicas-20128615b09d.herokuapp.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-visitor-token'],
