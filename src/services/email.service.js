@@ -20,7 +20,7 @@ class EmailService {
         }
 
         const { data, error } = await this.resend.emails.send({
-            from: 'Fornicas <onboarding@resend.dev>',
+           from: 'Fornicas <notificaciones@fornicas.com>',
             to,
             subject,
             text
