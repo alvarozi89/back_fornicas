@@ -1,6 +1,5 @@
 
 const { Resend } = require('resend');
-
 class EmailService {
     constructor() {
         if (!process.env.RESEND_API_KEY) {
@@ -8,6 +7,7 @@ class EmailService {
         }
 
         this.resend = new Resend(process.env.RESEND_API_KEY);
+
     }
 
     async sendEmail(to, subject, text) {
