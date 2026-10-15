@@ -1,18 +1,13 @@
-const nodemailer = require('nodemailer');
+
+const { Resend } = require('resend');
 
 class EmailService {
-
     constructor() {
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        family: 4,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_APP_PASSWORD
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error('Falta configurar RESEND_API_KEY');
         }
-    });
+
+        this.resend = new Resend(process.env.RESEND_API_KEY);
     }
 
     async sendEmail(to, subject, text) {
@@ -24,16 +19,22 @@ class EmailService {
             throw new Error('El asunto y el contenido son obligatorios');
         }
 
-        return await this.transporter.sendMail({
-            from: `"${process.env.EMAIL_FROM || 'Fornicas'}" <${process.env.EMAIL_USER}>`,
+        const { data, error } = await this.resend.emails.send({
+            from: 'Fornicas <onboarding@resend.dev>',
             to,
             subject,
             text
         });
+
+        if (error) {
+            throw new Error(`Error enviando correo con Resend: ${error.message}`);
+        }
+
+        return data;
     }
 
     async verifyConnection() {
-        return await this.transporter.verify();
+        return Boolean(process.env.RESEND_API_KEY);
     }
 }
 
