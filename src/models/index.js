@@ -19,6 +19,9 @@ const Department = require('./department')(sequelize, DataTypes);
 const City = require('./city')(sequelize, DataTypes);
 const Notification = require('./notification')(sequelize, DataTypes);
 const PasswordReset = require('./passwordreset')(sequelize, DataTypes);
+const ForumComment = require('./forumcomment')(sequelize, DataTypes);
+const ForumReport = require('./forumreport')(sequelize, DataTypes);
+const ForumTopic = require('./forumtopic')(sequelize, DataTypes);
 
 db.User = User;
 db.Profile = Profile;
@@ -34,6 +37,9 @@ db.Department = Department;
 db.City = City;
 db.Notification = Notification;
 db.PasswordReset = PasswordReset;
+db.ForumComment = ForumComment;
+db.ForumReport = ForumReport;
+db.ForumTopic = ForumTopic;
 
 Object.keys(db).forEach((modelName) => {
     if (db[modelName].associate) {
