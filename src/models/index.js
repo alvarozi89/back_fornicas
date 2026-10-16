@@ -18,6 +18,7 @@ const Report = require('./report')(sequelize, DataTypes);
 const Department = require('./department')(sequelize, DataTypes);
 const City = require('./city')(sequelize, DataTypes);
 const Notification = require('./notification')(sequelize, DataTypes);
+const PasswordReset = require('./passwordreset')(sequelize, DataTypes);
 
 db.User = User;
 db.Profile = Profile;
@@ -32,7 +33,7 @@ db.Report = Report;
 db.Department = Department;
 db.City = City;
 db.Notification = Notification;
-
+db.PasswordReset = PasswordReset;
 
 Object.keys(db).forEach((modelName) => {
     if (db[modelName].associate) {

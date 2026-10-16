@@ -296,6 +296,21 @@ async countViews(profileId) {
         }
     });
 }
+async findUserById(userId) {
+        return await this.User.findByPk(userId, {
+            attributes: { include: ['password_hash'] } // 🚀 Incluimos el hash de la BD
+        });
+    }
+
+    async updatePassword(userId, newPasswordHash) {
+        const user = await this.User.findByPk(userId);
+        if (!user) {
+            return null;
+        }
+        user.password_hash = newPasswordHash; // 🚀 Actualizamos el campo correcto
+        await user.save();
+        return user;
+    }
 }
 
 module.exports = ProfileRepository;

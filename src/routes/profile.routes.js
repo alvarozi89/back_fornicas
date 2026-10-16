@@ -9,9 +9,9 @@ const profileController = new ProfileController();
 router.get('/', profileController.getAllActive);
 router.get('/me', authMiddleware, profileController.getMyProfile);
 router.put('/me', authMiddleware, profileController.updateMyProfile);
+// 🚀 NUEVA RUTA PARA CAMBIAR LA CONTRASEÑA
+router.put('/update-password', authMiddleware, profileController.updatePassword);
 router.get('/:id', profileController.getById);
-
-
 
 
 

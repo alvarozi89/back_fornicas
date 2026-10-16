@@ -5,6 +5,9 @@ const SubscriptionRepository = require("../repositories/subscription.repository"
 const EmailService = require('./email.service');
 const bcrypt = require("bcrypt");
 const { generateToken } = require('../utils/jwt');
+const crypto = require('crypto');
+const PasswordResetRepository = require('../repositories/passwordreset.repository');
+
 
 class AuthService {
   constructor() {
@@ -12,6 +15,8 @@ class AuthService {
     this.profileRepository = new ProfileRepository(db);
     this.subscriptionRepository = new SubscriptionRepository(db);
     this.emailService = new EmailService();
+    this.passwordResetRepository = new PasswordResetRepository(db);
+
   }
 
   async register(data) {
@@ -257,6 +262,154 @@ if (age < 18) {
       },
       token
   };
+}
+async requestPasswordReset(email) {
+  if (!email || typeof email !== 'string') {
+    throw new Error('El email es obligatorio');
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await this.userRepository.findByEmail(normalizedEmail);
+
+  // No revelar si el correo está registrado.
+  if (!user || user.status !== 'ACTIVE') {
+    return {
+      message: 'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.'
+    };
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(rawToken)
+    .digest('hex');
+
+  const transaction = await db.sequelize.transaction();
+
+  try {
+    await this.passwordResetRepository.invalidatePendingByUserId(
+      user.id,
+      transaction
+    );
+
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.passwordResetRepository.create({
+      user_id: user.id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      used_at: null
+    }, transaction);
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL;
+
+  if (!frontendUrl) {
+    throw new Error('Falta configurar FRONTEND_URL');
+  }
+
+  const resetUrl =
+    `${frontendUrl.replace(/\/$/, '')}/auth/reset-password?token=${rawToken}`;
+
+  await this.emailService.sendEmail(
+    user.email,
+    'Recuperación de contraseña - Fornicas',
+    `Hola,
+
+Recibimos una solicitud para recuperar tu contraseña de Fornicas.
+
+Abre el siguiente enlace para establecer una nueva contraseña:
+${resetUrl}
+
+Este enlace vence en 15 minutos y solo puede utilizarse una vez.
+
+Si no solicitaste este cambio, puedes ignorar este correo.`
+  );
+
+  return {
+    message: 'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.'
+  };
+}
+
+async resetPassword(token, newPassword) {
+  if (!token || typeof token !== 'string') {
+    throw new Error('El token de recuperación es obligatorio');
+  }
+
+  if (!newPassword || typeof newPassword !== 'string') {
+    throw new Error('La nueva contraseña es obligatoria');
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error('La contraseña debe tener al menos 8 caracteres');
+  }
+
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  const resetRequest =
+    await this.passwordResetRepository.findValidByTokenHash(tokenHash);
+
+  if (!resetRequest || new Date(resetRequest.expires_at) <= new Date()) {
+    throw new Error('El enlace de recuperación no es válido o ha vencido');
+  }
+
+  const transaction = await db.sequelize.transaction();
+
+  try {
+    // Volver a comprobar el token dentro de la transacción evita
+    // reutilizarlo si otra solicitud ya lo consumió.
+    const lockedRequest = await db.PasswordReset.findOne({
+      where: {
+        id: resetRequest.id,
+        token_hash: tokenHash,
+        used_at: null
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    if (!lockedRequest || new Date(lockedRequest.expires_at) <= new Date()) {
+      throw new Error('El enlace de recuperación no es válido o ha vencido');
+    }
+
+    const user = await this.userRepository.findById(
+      lockedRequest.user_id
+    );
+
+    if (!user || user.status !== 'ACTIVE') {
+      throw new Error('No se pudo restablecer la contraseña');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+   await this.userRepository.update(
+    user.id,
+    { password_hash: passwordHash },
+    transaction
+  );
+
+    await this.passwordResetRepository.markAsUsed(
+      lockedRequest.id,
+      transaction
+    );
+
+    await transaction.commit();
+
+    return {
+      message: 'La contraseña se actualizó correctamente'
+    };
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 }
 

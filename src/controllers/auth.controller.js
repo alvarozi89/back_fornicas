@@ -54,6 +54,60 @@ class AuthController {
         });
     }
 };
+requestPasswordReset = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const result = await this.authService.requestPasswordReset(email);
+
+        return res.status(200).json({
+            success: true,
+            message: result.message
+        });
+    } catch (error) {
+        console.error('Error solicitando recuperación de contraseña:', error);
+
+        return res.status(500).json({
+            success: false,
+            message: 'No fue posible procesar la solicitud. Inténtalo más tarde.'
+        });
+    }
+};
+
+resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        const result = await this.authService.resetPassword(
+            token,
+            newPassword
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: result.message
+        });
+    } catch (error) {
+        console.error('Error restableciendo contraseña:', error);
+
+        const clientErrors = [
+            'El token de recuperación es obligatorio',
+            'La nueva contraseña es obligatoria',
+            'La contraseña debe tener al menos 8 caracteres',
+            'El enlace de recuperación no es válido o ha vencido',
+            'No se pudo restablecer la contraseña'
+        ];
+
+        const status = clientErrors.includes(error.message) ? 400 : 500;
+
+        return res.status(status).json({
+            success: false,
+            message: status === 400
+                ? error.message
+                : 'No fue posible restablecer la contraseña. Inténtalo más tarde.'
+        });
+    }
+};
 }
 
 module.exports = AuthController;

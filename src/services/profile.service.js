@@ -2,6 +2,7 @@ const db = require('../models');
 const ProfileRepository = require('../repositories/profile.repository');
 const RatingService = require('./rating.service');
 const CommentService = require('./comment.service');
+const bcrypt = require('bcrypt');
 
 class ProfileService {
 
@@ -259,6 +260,32 @@ async registerView(profileId, visitorToken) {
 
     return await this.profileRepository.countViews(profileId);
 }
+async updatePassword(userId, currentPassword, newPassword) {
+        const user = await this.profileRepository.findUserById(userId);
+
+        if (!user) {
+            throw new Error('Usuario no encontrado');
+        }
+
+        // 🚀 Comparamos contra user.password_hash
+        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+        
+        if (!isMatch) {
+            throw new Error('La contraseña actual es incorrecta');
+        }
+
+        if (!newPassword || newPassword.length < 8) {
+            throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // 🚀 Guardamos el nuevo hash
+        await this.profileRepository.updatePassword(userId, hashedPassword);
+
+        return { success: true, message: 'Contraseña actualizada correctamente' };
+    }
 }
 
 module.exports = ProfileService;

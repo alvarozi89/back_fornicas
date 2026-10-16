@@ -33,17 +33,17 @@ class UserRepository {
     });
 }
 
-    async update(id, data) {
-        const user = await this.User.findByPk(id);
+   async update(id, data, transaction = null) {
+    const user = await this.User.findByPk(id, { transaction });
 
-        if (!user) {
-            return null;
-        }
-
-        await user.update(data);
-
-        return user;
+    if (!user) {
+        return null;
     }
+
+    await user.update(data, { transaction });
+
+    return user;
+}
 }
 
 module.exports = UserRepository;

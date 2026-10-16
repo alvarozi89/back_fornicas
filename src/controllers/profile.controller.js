@@ -139,6 +139,39 @@ updateMyProfile = async (req, res) => {
         });
     }
 };
+updatePassword = async (req, res) => {
+        try {
+            const userId = req.user.id; // Extraído del token JWT de la usuaria autenticada
+            const { currentPassword, newPassword } = req.body;
+
+            await this.profileService.updatePassword(
+                userId,
+                currentPassword,
+                newPassword
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: 'Contraseña actualizada correctamente'
+            });
+
+        } catch (error) {
+            console.error('Error al actualizar la contraseña:', error);
+
+            const badRequestErrors = [
+                'Usuario no encontrado',
+                'La contraseña actual es incorrecta',
+                'La nueva contraseña debe tener al menos 8 caracteres'
+            ];
+
+            const statusCode = badRequestErrors.includes(error.message) ? 400 : 500;
+
+            return res.status(statusCode).json({
+                success: false,
+                message: error.message || 'Error interno al actualizar la contraseña'
+            });
+        }
+    };
 }
 
 module.exports = ProfileController;
