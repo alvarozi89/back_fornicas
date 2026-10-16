@@ -11,6 +11,7 @@ const commentRoutes = require('./routes/comment.routes');
 const reportRoutes = require('./routes/report.routes');
 const locationRoutes = require('./routes/location.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const forumRoutes =  require('./routes/forum.routes')
 const cors = require('cors');
 const app = express();
 const path = require('path');
@@ -44,4 +45,5 @@ app.use(
     '/uploads',
     express.static(path.join(__dirname, '../uploads'))
 );
+app.use('/api/forum', forumRoutes);
 module.exports = app;
