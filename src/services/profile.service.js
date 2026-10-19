@@ -3,6 +3,7 @@ const ProfileRepository = require('../repositories/profile.repository');
 const RatingService = require('./rating.service');
 const CommentService = require('./comment.service');
 const bcrypt = require('bcrypt');
+const EmailService = require('./email.service');
 
 class ProfileService {
 
@@ -10,6 +11,7 @@ class ProfileService {
         this.profileRepository = new ProfileRepository(db);
         this.ratingService = new RatingService();
         this.commentService = new CommentService();
+        this.emailService = new EmailService();
     }
 
   async getById(id, visitorToken = null) {
@@ -286,6 +288,98 @@ async updatePassword(userId, currentPassword, newPassword) {
 
         return { success: true, message: 'Contraseña actualizada correctamente' };
     }
+async deactivateAccount(userId) {
+    const t = await db.sequelize.transaction();
+    
+    try {
+        // 1. Desactivar en la tabla users y profiles
+        await db.User.update(
+            { status: 'INACTIVE' },
+            { where: { id: userId }, transaction: t }
+        );
+
+        await db.Profile.update(
+            { status: 'INACTIVE' },
+            { where: { user_id: userId }, transaction: t }
+        );
+
+        await t.commit();
+
+        // 🚀 Opcional: Buscar el email y nombre para notificar
+        try {
+            const user = await db.User.findByPk(userId);
+            const profile = await db.Profile.findOne({ where: { user_id: userId } });
+
+            if (user && user.email) {
+                await this.emailService.sendEmail(
+                    user.email,
+                    'Tu perfil ha sido dado de baja - Fornicas',
+                    `Hola ${profile ? profile.name : 'Usuario'},
+
+Lamentamos que hayas decidido dar de baja tu perfil en Fornicas. 
+
+Tu cuenta y tu perfil han sido desactivados y ya no se muestran públicamente. Si en algún momento deseas regresar, puedes volver a iniciar sesión o reactivar tu cuenta mientras tu suscripción siga vigente.
+
+Gracias por haber formado parte de Fornicas.`
+                );
+            }
+        } catch (emailError) {
+            console.error('Error enviando correo de baja:', emailError.message);
+        }
+
+        return { success: true, message: 'Tu perfil ha sido dado de baja de forma exitosa.' };
+    } catch (error) {
+        await t.rollback();
+        throw error;
+    }
+}
+
+async reactivateAccount(userId) {
+    const t = await db.sequelize.transaction();
+    
+    try {
+        // 1. Reactivar en la tabla users y profiles
+        await db.User.update(
+            { status: 'ACTIVE' },
+            { where: { id: userId }, transaction: t }
+        );
+
+        await db.Profile.update(
+            { status: 'ACTIVE' },
+            { where: { user_id: userId }, transaction: t }
+        );
+
+        await t.commit();
+
+        // 🚀 Notificar por correo la reactivación
+        try {
+            const user = await db.User.findByPk(userId);
+            const profile = await db.Profile.findOne({ where: { user_id: userId } });
+
+            if (user && user.email) {
+                await this.emailService.sendEmail(
+                    user.email,
+                    '¡Tu cuenta ha sido reactivada! - Fornicas',
+                    `Hola ${profile ? profile.name : 'Usuario'},
+
+¡Qué bueno tenerte de vuelta en Fornicas!
+
+Tu cuenta ha sido reactivada exitosamente y tu perfil ya se encuentra visible nuevamente en la plataforma.
+
+¡Mucho éxito!`
+                );
+            }
+        } catch (emailError) {
+            console.error('Error enviando correo de reactivación:', emailError.message);
+        }
+
+        return { success: true, message: 'Tu cuenta ha sido reactivada exitosamente.' };
+    } catch (error) {
+        await t.rollback();
+        throw error;
+    }
+}
+
 }
 
 module.exports = ProfileService;

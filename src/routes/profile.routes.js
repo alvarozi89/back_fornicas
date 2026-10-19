@@ -13,7 +13,10 @@ router.put('/me', authMiddleware, profileController.updateMyProfile);
 router.put('/update-password', authMiddleware, profileController.updatePassword);
 router.get('/:id', profileController.getById);
 
+router.put('/deactivate', authMiddleware, profileController.deactivateAccount);
 
+// Ruta para reactivar la cuenta
+router.put('/reactivate', authMiddleware, profileController.reactivateAccount);
 
 module.exports = router;
 

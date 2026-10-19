@@ -219,7 +219,7 @@ if (age < 18) {
     }
   }
 
-  async login(email, password) {
+async login(email, password) {
 
     if (!email) {
         throw new Error('El email es obligatorio');
@@ -235,10 +235,7 @@ if (age < 18) {
         throw new Error('Credenciales inválidas');
     }
 
-    if (user.status !== 'ACTIVE') {
-        throw new Error('El usuario no está activo');
-    }
-
+    // 1. Validamos la contraseña primero por seguridad
     const passwordValid = await bcrypt.compare(
         password,
         user.password_hash
@@ -248,20 +245,43 @@ if (age < 18) {
         throw new Error('Credenciales inválidas');
     }
 
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role
-  });
+    // 2. Si la contraseña es correcta pero está inactivo, ¡lo reactivamos automáticamente!
+    if (user.status !== 'ACTIVE') {
+        const t = await db.sequelize.transaction();
+        try {
+            await db.User.update(
+                { status: 'ACTIVE' },
+                { where: { id: user.id }, transaction: t }
+            );
 
-  return {
-      user: {
-          id: user.id,
-          email: user.email,
-          role: user.role
-      },
-      token
-  };
+            await db.Profile.update(
+                { status: 'ACTIVE' },
+                { where: { user_id: user.id }, transaction: t }
+            );
+
+            await t.commit();
+            user.status = 'ACTIVE'; // Actualizamos la variable local en memoria
+        } catch (error) {
+            await t.rollback();
+            throw new Error('Error al reactivar la cuenta automáticamente');
+        }
+    }
+
+    // 3. Generamos el token de acceso normal
+    const token = generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role
+    });
+
+    return {
+        user: {
+            id: user.id,
+            email: user.email,
+            role: user.role
+        },
+        token
+    };
 }
 async requestPasswordReset(email) {
   if (!email || typeof email !== 'string') {

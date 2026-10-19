@@ -54,6 +54,12 @@ async findPublicById(id) {
         ],
 
         include: [
+            {
+                model: this.User,
+                as: 'user',
+                where: { status: 'ACTIVE' }, // 🚀 Valida que el usuario dueño del perfil esté activo
+                attributes: [email]
+            },
 
             {
         model: this.Photo,
@@ -176,6 +182,12 @@ async findAllActive(limit, offset, filters = {}) {
         ],
 
         include: [
+            {
+                model: this.User,
+                as: 'user', // Asegúrate de que la relación en models esté definida como 'user'
+                where: { status: 'ACTIVE' }, // 🚀 Oculta si el usuario está inactivo o dado de baja
+                attributes: ['email']
+            },
             {
                 model: this.Photo,
                 as: 'photos',

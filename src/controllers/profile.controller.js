@@ -172,6 +172,48 @@ updatePassword = async (req, res) => {
             });
         }
     };
+
+    // profile.controller.js o auth.controller.js
+deactivateAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        await this.profileService.deactivateAccount(userId);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Tu perfil ha sido dado de baja de forma exitosa.'
+        });
+
+    } catch (error) {
+        console.error('Error al dar de baja la cuenta:', error);
+
+        return res.status(400).json({
+            success: false,
+            message: error.message || 'Ocurrió un error al procesar la baja de la cuenta.'
+        });
+    }
+};
+reactivateAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const result = await this.profileService.reactivateAccount(userId);
+
+        return res.status(200).json({
+            success: true,
+            message: result.message
+        });
+
+    } catch (error) {
+        console.error('Error al reactivar la cuenta:', error);
+
+        return res.status(400).json({
+            success: false,
+            message: error.message || 'Ocurrió un error al procesar la reactivación.'
+        });
+    }
+};
 }
 
 module.exports = ProfileController;
