@@ -58,7 +58,7 @@ async findPublicById(id) {
                 model: this.User,
                 as: 'user',
                 where: { status: 'ACTIVE' }, // 🚀 Valida que el usuario dueño del perfil esté activo
-                attributes: [email]
+                attributes: ['email']
             },
 
             {
