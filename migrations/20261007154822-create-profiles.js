@@ -37,7 +37,10 @@ module.exports = {
 
             whatsapp: {
                 type: Sequelize.STRING(30),
-                allowNull: true
+                allowNull: false,
+            unique: {
+                msg: 'Este número de WhatsApp ya se encuentra asociado a otro perfil.'
+            }
             },
 
             telegram: {

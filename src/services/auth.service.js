@@ -19,7 +19,7 @@ class AuthService {
 
   }
 
-  async register(data) {
+ async register(data) {
     const {
       email,
       password,
@@ -33,12 +33,20 @@ class AuthService {
       telegram,
     } = data;
 
+    console.log("👉 Intentando registrar con WhatsApp:", whatsapp); // 👈 Depuración 1
+
     // ==========================
     // VALIDACIONES DE NEGOCIO
     // ==========================
 
     if (!email) {
       throw new Error("El email es obligatorio");
+    }
+
+    const disposableDomains = require('disposable-email-domains');
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (emailDomain && disposableDomains.includes(emailDomain)) {
+      throw new Error("No se permiten correos temporales o desechables. Por favor usa un correo válido.");
     }
 
     if (!password) {
@@ -54,42 +62,38 @@ class AuthService {
     }
 
     if (!city_id) {
-    throw new Error("La ciudad es obligatoria");
-  }
+      throw new Error("La ciudad es obligatoria");
+    }
 
     const city = await db.City.findByPk(city_id);
 
     if (!city) {
       throw new Error("La ciudad seleccionada no existe");
     }
-   const birthDate = new Date(`${birth_date}T00:00:00`);
+    
+    const birthDate = new Date(`${birth_date}T00:00:00`);
 
-if (Number.isNaN(birthDate.getTime())) {
-    throw new Error("La fecha de nacimiento no es válida");
-}
+    if (Number.isNaN(birthDate.getTime())) {
+      throw new Error("La fecha de nacimiento no es válida");
+    }
 
-const today = new Date();
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDifference = today.getMonth() - birthDate.getMonth();
 
-let age = today.getFullYear() - birthDate.getFullYear();
+    if (
+      monthDifference < 0 ||
+      (
+          monthDifference === 0 &&
+          today.getDate() < birthDate.getDate()
+      )
+    ) {
+      age--;
+    }
 
-const monthDifference =
-    today.getMonth() - birthDate.getMonth();
-
-if (
-    monthDifference < 0 ||
-    (
-        monthDifference === 0 &&
-        today.getDate() < birthDate.getDate()
-    )
-) {
-    age--;
-}
-
-if (age < 18) {
-    throw new Error(
-        "Debes ser mayor de 18 años para registrarte"
-    );
-}
+    if (age < 18) {
+      throw new Error("Debes ser mayor de 18 años para registrarte");
+    }
 
     const userExists = await this.userRepository.existsByEmail(email);
 
@@ -104,10 +108,6 @@ if (age < 18) {
     const transaction = await db.sequelize.transaction();
 
     try {
-      // ==========================
-      // CREAR USER
-      // ==========================
-
       const passwordHash = await bcrypt.hash(password, 12);
 
       const user = await this.userRepository.create(
@@ -119,10 +119,6 @@ if (age < 18) {
         },
         transaction,
       );
-
-      // ==========================
-      // CREAR PROFILE
-      // ==========================
 
       const profile = await this.profileRepository.create(
         {
@@ -140,12 +136,7 @@ if (age < 18) {
         transaction,
       );
 
-      // ==========================
-      // CREAR FREE TRIAL
-      // ==========================
-
       const startDate = new Date();
-
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + 1);
 
@@ -160,60 +151,32 @@ if (age < 18) {
         },
         transaction,
       );
-
-      // ==========================
-      // CONFIRMAR
-      // ==========================
-
       
-    await transaction.commit();
-
-  // Enviar correo de bienvenida
-    try {
-        await this.emailService.sendEmail(
-            user.email,
-            '¡Bienvenida a Fornicas!',
-            `Hola ${profile.name},
-
-    ¡Te damos la bienvenida a Fornicas!
-
-    Tu cuenta ha sido creada correctamente y ya tienes un mes de prueba gratuito.
-
-    Completa tu perfil y agrega tus fotos para comenzar.
-
-    Gracias por formar parte de Fornicas.`
-        );
-    } catch (error) {
-        console.error(
-            'Error enviando correo de bienvenida:',
-            error.message
-        );
-    }
+      await transaction.commit();
 
       return {
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        },
-
-        profile: {
-          id: profile.id,
-          name: profile.name,
-          city_id: profile.city_id,
-          title: profile.title,
-        },
-
-        subscription: {
-          id: subscription.id,
-          type: subscription.type,
-          status: subscription.status,
-          start_date: subscription.start_date,
-          end_date: subscription.end_date,
-        },
+        user: { id: user.id, email: user.email, role: user.role },
+        profile: { id: profile.id, name: profile.name, city_id: profile.city_id, title: profile.title },
+        subscription: { id: subscription.id, type: subscription.type, status: subscription.status, start_date: subscription.start_date, end_date: subscription.end_date },
       };
+
     } catch (error) {
       await transaction.rollback();
+
+      console.error("🚨 ERROR CAPTURADO EN CATCH:", error.name); // 👈 Depuración 2
+      console.error("🚨 DETALLE COMPLETO DEL ERROR:", error); // 👈 Depuración 3
+
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const field = error.errors?.[0]?.path;
+        console.log("🎯 El campo duplicado que falló es:", field); // 👈 Depuración 4
+
+        if (field === 'whatsapp') {
+          throw new Error('Este número de WhatsApp ya se encuentra asociado a otro perfil.');
+        }
+        if (field === 'email') {
+          throw new Error('Este correo electrónico ya está registrado.');
+        }
+      }
 
       throw error;
     }

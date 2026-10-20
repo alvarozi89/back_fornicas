@@ -104,7 +104,8 @@ Profile.hasMany(models.Report, {
            
             whatsapp: {
                 type: DataTypes.STRING(30),
-                allowNull: true
+                allowNull: false,
+                unique: true
             },
 
             telegram: {

@@ -323,6 +323,9 @@ async findUserById(userId) {
         await user.save();
         return user;
     }
+    async findByWhatsapp(whatsapp) {
+    return await this.Profile.findOne({ where: { whatsapp } });
+}
 }
 
 module.exports = ProfileRepository;
