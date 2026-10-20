@@ -125,8 +125,12 @@ async findAllActive(limit, offset, filters = {}) {
         };
     }
 
+    // 🚀 Lógica para perfiles virtuales o filtrados por ciudad
     if (filters.cityId) {
-        where.city_id = filters.cityId;
+        where[Op.or] = [
+            { city_id: filters.cityId },
+            { is_virtual: true }
+        ];
     }
 
     const cityInclude = {
@@ -171,6 +175,7 @@ async findAllActive(limit, offset, filters = {}) {
             'title',
             'nickname',
             'city_id',
+            'is_virtual',
             [
                 this.Profile.sequelize.literal(`(
                     SELECT COUNT(*)

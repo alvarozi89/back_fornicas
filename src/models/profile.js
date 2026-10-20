@@ -117,6 +117,11 @@ Profile.hasMany(models.Report, {
                 type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
                 allowNull: false,
                 defaultValue: 'ACTIVE'
+            },
+            is_virtual: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: false
             }
         },
        {

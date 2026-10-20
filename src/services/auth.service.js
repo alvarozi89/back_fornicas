@@ -31,6 +31,7 @@ class AuthService {
       city_id,
       whatsapp,
       telegram,
+      is_virtual
     } = data;
 
     console.log("👉 Intentando registrar con WhatsApp:", whatsapp); // 👈 Depuración 1
@@ -64,7 +65,7 @@ class AuthService {
     if (!city_id) {
       throw new Error("La ciudad es obligatoria");
     }
-
+    const finalCityId = is_virtual ? 1106 : city_id;
     const city = await db.City.findByPk(city_id);
 
     if (!city) {
@@ -128,10 +129,11 @@ class AuthService {
           title,
           birth_date,
           description,
-          city_id,
+         city_id: finalCityId,
           whatsapp,
           telegram,
           status: "ACTIVE",
+          is_virtual: !!is_virtual
         },
         transaction,
       );
@@ -156,7 +158,7 @@ class AuthService {
 
       return {
         user: { id: user.id, email: user.email, role: user.role },
-        profile: { id: profile.id, name: profile.name, city_id: profile.city_id, title: profile.title },
+        profile: { id: profile.id, name: profile.name, city_id: profile.city_id, title: profile.title, is_virtual: profile.is_virtual },
         subscription: { id: subscription.id, type: subscription.type, status: subscription.status, start_date: subscription.start_date, end_date: subscription.end_date },
       };
 

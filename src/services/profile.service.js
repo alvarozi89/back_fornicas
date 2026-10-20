@@ -146,7 +146,8 @@ async updateMyProfile(userId, data) {
         description: data.description,
          city_id: data.city_id,
         whatsapp: data.whatsapp,
-        telegram: data.telegram
+        telegram: data.telegram,
+        is_virtual: data.is_virtual ?? false,
     };
 
     if (allowedFields.name !== undefined && !allowedFields.name) {
